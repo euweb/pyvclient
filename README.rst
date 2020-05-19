@@ -2,15 +2,17 @@
 pyvclient
 =========
 
+A python module providing a homie convention mqtt interface to communicate with viessmann heater accessed by vcontrold.
 
-Add a short description here!
+Usage
+=====
 
+    pyvclient --log src/conf/logging.yaml src/conf/config.yaml
 
-Description
-===========
-
-A longer description of your project goes here...
-
+Links
+=====
+https://github.com/openv/openv/wiki/vcontrold
+https://homieiot.github.io/
 
 Note
 ====
