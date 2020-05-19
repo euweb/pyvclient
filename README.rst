@@ -7,19 +7,19 @@ A python module providing a homie convention mqtt interface to communicate with 
 Usage
 =====
 
-    - Create a virtual environment
+Create a virtual environment::
 
-        python -m venv .venv
-        . .venv/bin/activate
-        # fish users: . .venv/bin/activate.fish
+    python -m venv .venv
+    . .venv/bin/activate
+    # fish users: . .venv/bin/activate.fish
 
-    - Install package (plus dev dependencies) in the virtual environment
+Install package (plus dependencies) in the virtual environment::
 
-        pip install .
+    pip install .
 
-    - Run as a console script
+Run as a console script::
 
-        pyvclient --log src/conf/logging.yaml src/conf/config.yaml
+    pyvclient --log src/conf/logging.yaml src/conf/config.yaml
 
 Links
 =====
