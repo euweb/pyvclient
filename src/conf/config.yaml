@@ -1,0 +1,38 @@
+MQTT_SETTINGS:
+  MQTT_BROKER: localhost
+  MQTT_PORT: 1883
+#    MQTT_USERNAME: None
+#    MQTT_PASSWORD: None
+#    MQTT_KEEPALIVE: 60
+#    MQTT_CLIENT_ID: None
+#    MQTT_SHARE_CLIENT: None
+
+VControld:
+  host: localhost
+  port: 3002
+
+Properties:
+  TempA:
+    readonly: true
+    interval: 300
+  TempWWist:
+    readonly: true
+    interval: 300
+  TempKol:
+    readonly: true
+    interval: 300
+  SolarStunden:
+    readonly: true
+    interval: 3600
+  SolarLeistung:
+    readonly: true
+    interval: 3600
+  BrennerStarts:
+    readonly: true
+    interval: 300
+  BrennerStunden1:
+    readonly: true
+    interval: 3600
+  BetriebArtM1:
+    readonly: false
+    interval: 3600

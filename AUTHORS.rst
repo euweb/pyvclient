@@ -1,5 +1,0 @@
-============
-Contributors
-============
-
-* Eugen Weber 
