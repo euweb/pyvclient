@@ -10,6 +10,7 @@ rx_dict = {
     'type': re.compile(r'Type:(?P<type>.*)'),
     'enum_value': re.compile(r'Enum Bytes: (?P<value>\d+) Text: (?P<text>.*)'),
     'unit': re.compile(r'Einheit: (?P<unit>.*)'),
+    'calc': re.compile(r'Get-Calc: (?P<calc>.*)')
 }
 
 
@@ -33,36 +34,13 @@ class CallBack:
         self.properties.append(command)
 
 
-def parse_item(command, props, detail, raw_value):
-    get_command = 'get' + command
-
-    data = {
-        'name': command,
-        'get_command': get_command,
-        'settable': not props['readonly'] or False
-    }
-
-    for line in detail:
-        key, match = _parse_line(line)
-
-        if key == 'type':
-            data[key] = (match.group('type').strip())
-
-        if key == 'unit':
-            data[key] = (match.group('unit').strip())
-
-        if key == 'enum_value':
-            if 'enum' in data:
-                data['enum'].append(match.group('text').strip())
-            else:
-                data['enum'] = [match.group('text').strip()]
-
-    data = ObjectView(data)
-
-    data.raw_value = raw_value
-    data.value = parse_value(raw_value, data)
-
-    return data
+def _parse_line(line):
+    for key, rx in rx_dict.items():
+        match = rx.search(line)
+        if match:
+            return key, match
+        # if there are no matches
+    return None, None
 
 
 class PyVClient:
@@ -71,6 +49,7 @@ class PyVClient:
         self.vcomm = vcomm
         self.config = ObjectView(config)
         self.properties = self.config.Properties
+        self.precision = self.config.Precision
         self.items = self._get_items()
         self.heater = DeviceViessmannHeater(self.items.values(),
                                             mqtt_settings=self.config.MQTT_SETTINGS)
@@ -84,10 +63,10 @@ class PyVClient:
         values = self.vcomm.process_commands(commands.values())
 
         for cmd in self.properties:
-            items.append(parse_item(cmd,
-                                    self.properties.get(cmd),
-                                    details.get(detail_commands[cmd]),
-                                    values.get(commands[cmd])[0]))
+            items.append(self.parse_item(cmd,
+                                         self.properties.get(cmd),
+                                         details.get(detail_commands[cmd]),
+                                         values.get(commands[cmd])[0]))
 
         return {item.name: item for item in items}
 
@@ -99,7 +78,7 @@ class PyVClient:
             value_raw = values.get(commands[prop])
             self.heater.update_value(
                 prop,
-                parse_value(value_raw[0], self.items.get(prop)))
+                self.parse_value(value_raw[0], self.items.get(prop)))
 
     def setup_timers(self):
         logger.info("setting up cron")
@@ -116,20 +95,47 @@ class PyVClient:
             )
             repeating_timer.add_callback(callbacks[cb])
 
+    def parse_value(self, value, item):
+        value = str(value).replace(item.unit, '').strip()
+        if item.type == 'short':
+            digits = self.precision.get(item.calc)
+            if digits:
+                value = round(float(value), digits)
+            else:
+                value = float(value)
+        elif item.type == 'int' or item.type == 'uint':
+            value = int(float(value))
+        return value
 
-def _parse_line(line):
-    for key, rx in rx_dict.items():
-        match = rx.search(line)
-        if match:
-            return key, match
-        # if there are no matches
-    return None, None
+    def parse_item(self, command, props, detail, raw_value):
+        get_command = 'get' + command
 
+        data = {
+            'name': command,
+            'get_command': get_command,
+            'settable': not props['readonly'] or False
+        }
 
-def parse_value(value, item):
-    value = str(value).replace(item.unit, '').strip()
-    if item.type == 'short':
-        value = float(value)
-    elif item.type == 'int' or item.type == 'uint':
-        value = int(float(value))
-    return value
+        for line in detail:
+            key, match = _parse_line(line)
+
+            if key == 'type':
+                data[key] = (match.group('type').strip())
+
+            if key == 'unit':
+                data[key] = (match.group('unit').strip())
+
+            if key == 'enum_value':
+                if 'enum' in data:
+                    data['enum'].append(match.group('text').strip())
+                else:
+                    data['enum'] = [match.group('text').strip()]
+            if key == 'calc':
+                data['calc'] = (match.group('calc').strip())
+
+        data = ObjectView(data)
+
+        data.raw_value = raw_value
+        data.value = self.parse_value(raw_value, data)
+
+        return data

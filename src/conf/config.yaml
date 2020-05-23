@@ -36,3 +36,10 @@ Properties:
   BetriebArtM1:
     readonly: false
     interval: 3600
+
+Precision:
+  "V": 0
+  "V/2": 0
+  "V/10": 1
+  "V/1000": 0
+  "V/3600": 2
