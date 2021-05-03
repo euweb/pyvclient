@@ -2,9 +2,11 @@ import logging
 
 from homie.device_base import Device_Base
 from homie.node.node_base import Node_Base
-from homie.node.property.property_enum import Property_Enum
-from homie.node.property.property_integer import Property_Integer
-from homie.node.property.property_temperature import Property_Temperature
+from pyvclient.homie.property_enum import Property_Enum
+from pyvclient.homie.property_integer import Property_Integer
+from pyvclient.homie.property_temperature import Property_Temperature
+from pyvclient.homie.property_string import Property_String
+from pyvclient.vcomm.vcomm import VComm
 
 logger = logging.getLogger(__name__)
 
@@ -76,10 +78,10 @@ class DeviceViessmannHeater(Device_Base):
 
         self.start()
 
-    def set_value(self, value):
-        commands = {cmd: "'set" + self.name +" "+ value + "'"}
+    def set_value(self, value, topic):
+        #commands = {cmd: "'set" + self.name +" "+ value + "'"}
         #vcomm.set_commands(commands.value)
-        logger.debug("Set value: {} for {}".format(value,self.name))
+        logger.debug("Set value: {} for {}".format(value, topic))
 
     def update_value(self, node_id, value):
         try:
