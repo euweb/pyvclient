@@ -42,7 +42,7 @@ class Property_String(Property_Base):
         if value is not None:
             if self.validate_value(value):
                 self.value = value
-                self.set_value(value, topic)  # call function to actually change the value
+                self.set_value(value, self.name)  # call function to actually change the value
             else:
                 logger.warning(
                     "Payload value not valid for property for topic {}, payload is {}".format(
