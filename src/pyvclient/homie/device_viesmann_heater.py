@@ -2,10 +2,10 @@ import logging
 
 from homie.device_base import Device_Base
 from homie.node.node_base import Node_Base
-from pyvclient.homie.property_enum import Property_Enum
-from pyvclient.homie.property_integer import Property_Integer
-from pyvclient.homie.property_temperature import Property_Temperature
-from pyvclient.homie.property_string import Property_String
+from .property_enum import Property_Enum
+from .property_integer import Property_Integer
+from .property_temperature import Property_Temperature
+from .property_string import Property_String
 from pyvclient.vcomm.vcomm import VComm
 
 logger = logging.getLogger(__name__)

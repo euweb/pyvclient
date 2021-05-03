@@ -1,5 +1,4 @@
-from .property_float import Property_Float
-
+from homie.node.property.property_float import Property_Float
 
 class Property_Temperature(Property_Float):
     def __init__(

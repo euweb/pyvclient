@@ -1,4 +1,4 @@
-from .property_base import Property_Base
+from homie.node.property.property_base import Property_Base
 import logging
 
 logger = logging.getLogger(__name__)
