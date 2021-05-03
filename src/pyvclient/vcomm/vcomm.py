@@ -77,6 +77,46 @@ class VComm():
 
         return value
 
+    def set(self,cmd):
+        logger.debug("set command %s", cmd)
+
+        attempt = 5
+        success = False
+
+        if not self.connected:
+            self.__connect()
+
+        while not success & attempt > 0:
+            try:
+                self.tn.write(cmd.encode('utf-8') + b"\n")
+                value = self.tn.read_until(b'vctrld>').decode('utf-8').splitlines()[:-1]
+                logger.debug("received feedback: " + str(value))
+                if str(value) == 'OK':
+                    success = True
+                attempt -=1
+            except Exception as e:
+                logger.error(e)
+                attempt -= 1
+                if attempt < 0:
+                    self._lock.release()
+                    raise VCommError("No connection to vcontrold possible")
+        
+        return success
+
+    def set_commands(self, command):
+        logger.info("set commands")
+        logger.debug(commands)
+        self._lock.acquire()
+        ret = {}
+        try:
+            for cmd in commands:
+                ret.update( {cmd: self.__set(cmd) })
+        finally:
+            self.__close()
+            self._lock.release()
+        
+        return ret
+
     def process_commands(self, commands):
         logger.info("process commands")
         logger.debug(commands)

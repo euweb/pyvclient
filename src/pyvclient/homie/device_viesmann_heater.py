@@ -25,7 +25,7 @@ class DeviceViessmannHeater(Device_Base):
                  mqtt_settings=MQTT_DEFAULT_SETTINGS,
                  ):
         super().__init__(device_id, name, homie_settings, mqtt_settings)
-
+        self.vcomm=vc
         node = Node_Base(self, "generic", "Generic", "generic")
         self.add_node(node)
 
