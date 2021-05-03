@@ -82,7 +82,7 @@ class DeviceViessmannHeater(Device_Base):
                     set_value=self.set_value if item.settable else None
                 )
                 node.add_property(string_value)
-                item.property = string_property
+                item.property = string_value
             else:
                 logger.info("Unknown item: " + item.__dict__)
 
