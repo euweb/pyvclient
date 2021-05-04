@@ -17,12 +17,14 @@ MQTT_DEFAULT_SETTINGS = {
 
 
 class DeviceViessmannHeater(Device_Base):
+    vcomm = None
     def __init__(self,
                  item_config,
                  device_id="viessmann",
                  name="Viessmann Heizung",
                  homie_settings=None,
                  mqtt_settings=MQTT_DEFAULT_SETTINGS,
+                 vc=None
                  ):
         super().__init__(device_id, name, homie_settings, mqtt_settings)
         self.vcomm=vc
@@ -80,7 +82,7 @@ class DeviceViessmannHeater(Device_Base):
 
     def set_value(self, value, name):     
         logger.debug("Set value: {} for {}".format(value, name))
-        self.comm.set_command(name, value)
+        self.vcomm.set_command(name, value)
 
     def update_value(self, node_id, value):
         try:

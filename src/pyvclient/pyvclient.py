@@ -52,7 +52,7 @@ class PyVClient:
         self.precision = self.config.Precision
         self.items = self._get_items()
         self.heater = DeviceViessmannHeater(self.items.values(),
-                                            mqtt_settings=self.config.MQTT_SETTINGS)
+                                            mqtt_settings=self.config.MQTT_SETTINGS, vc=vcomm)
 
     def _get_items(self):
         items = []
