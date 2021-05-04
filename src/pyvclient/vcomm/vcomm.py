@@ -84,20 +84,20 @@ class VComm():
         attempt = 5
         success = False
 
-        cmd = 'set' + reg + " " + value
+        cmd = 'set' + reg + " " + value + "\n"
 
         if not self.connected:
             self.__connect()
 
         while not success & attempt > 0:
             try:
-                logger.debug("set: [" + cmd.encode('utf-8') + b"\n" + "]")
-                self.tn.write(cmd + b"\n")
+                logger.debug("set: [" + cmd + "]")
+                self.tn.write(cmd.encode('utf-8'))
                 value = self.tn.read_until(b'vctrld>').decode('utf-8').splitlines()[:-1]
                 logger.debug("received feedback: " + str(value))
-                if str(value) == 'OK':
+                if str(value) == "['OK']":
                     success = True
-                attempt -=1
+                attempt -= 1
             except Exception as e:
                 logger.error(e)
                 attempt -= 1

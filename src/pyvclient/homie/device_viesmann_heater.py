@@ -80,7 +80,7 @@ class DeviceViessmannHeater(Device_Base):
 
     def set_value(self, value, name):     
         logger.debug("Set value: {} for {}".format(value, name))
-        vcomm.set_command(self.name, value)
+        self.comm.set_command(name, value)
 
     def update_value(self, node_id, value):
         try:
