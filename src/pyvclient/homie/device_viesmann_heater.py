@@ -5,6 +5,7 @@ from homie.node.node_base import Node_Base
 from homie.node.property.property_enum import Property_Enum
 from homie.node.property.property_integer import Property_Integer
 from homie.node.property.property_temperature import Property_Temperature
+from homie.node.property.property_string import Property_String
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +70,19 @@ class DeviceViessmannHeater(Device_Base):
                 )
                 node.add_property(int_value)
                 item.property = int_value
+            elif item.type == 'systime':
+                value = item.value
+                string_value = Property_String(
+                    node,
+                    id=item.name.lower(),
+                    name=item.name,
+                    settable=item.settable,
+                    value=value,
+                    unit=item.unit,
+                    set_value=self.set_value if item.settable else None
+                )
+                node.add_property(string_value)
+                item.property = string_value
             else:
                 logger.info("Unknown item: " + item.__dict__)
 
