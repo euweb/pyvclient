@@ -73,6 +73,19 @@ class DeviceViessmannHeater(Device_Base):
                 )
                 node.add_property(int_value)
                 item.property = int_value
+            elif item.type == 'systime':
+                value = item.value
+                string_value = Property_String(
+                    node,
+                    id=item.name.lower(),
+                    name=item.name,
+                    settable=item.settable,
+                    value=value,
+                    unit=item.unit,
+                    set_value=self.set_value if item.settable else None
+                )
+                node.add_property(string_value)
+                item.property = string_value
             else:
                 logger.info("Unknown item: " + item.__dict__)
 
