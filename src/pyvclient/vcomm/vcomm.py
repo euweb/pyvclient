@@ -19,6 +19,7 @@ class VComm():
         self.connected = False
         self._connection_errorlog = 5
         self._connection_attempts = 0
+        self._has_lock = False
 
     def __connect(self):
         logger.info("connect to vcontrold")
@@ -34,6 +35,7 @@ class VComm():
             logger.error(e)
         else:
             self.connected = True
+            self._has_lock = True
 
     def __close(self):
         logger.info("disconnect from vcontrold")
@@ -46,6 +48,12 @@ class VComm():
         finally:
             # TODO fix hack due to reconnection errors
             time.sleep(1)
+    
+    def __cleanup(self):
+        if self.__has_lock:
+            self.__close()
+            self._lock.release()
+            self._has_lock = False
 
     def __request(self, cmd):
 
@@ -73,7 +81,7 @@ class VComm():
                 logger.error(e)
                 attempts -= 1
                 if attempts < 0:
-                    self._lock.release()
+                    self.__cleanup()
                     raise VCommError("No connection to vcontrold.")
 
         return value
@@ -103,7 +111,7 @@ class VComm():
                 logger.error(e)
                 attempt -= 1
                 if attempt < 0:
-                    self._lock.release()
+                    self.__cleanup()
                     raise VCommError("No connection to vcontrold possible")
         
         return success
@@ -117,8 +125,7 @@ class VComm():
             for cmd in commands:
                 ret.update({cmd: self.__request(cmd)})
         finally:
-            self.__close()
-            self._lock.release()
+            self.__cleanup()
 
         return ret
 
