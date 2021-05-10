@@ -35,7 +35,6 @@ class VComm():
             logger.error(e)
         else:
             self.connected = True
-            self._has_lock = True
 
     def __close(self):
         logger.info("disconnect from vcontrold")
@@ -88,7 +87,8 @@ class VComm():
 
     def set_command(self, reg, value):
         logger.debug("set  %s to %s", reg, value)
-
+        self._lock.acquire()
+        self._has_lock = True
 
         attempt = 5
         success = False
@@ -120,6 +120,7 @@ class VComm():
         logger.info("process commands")
         logger.debug(commands)
         self._lock.acquire()
+        self._has_lock = True
         ret = {}
         try:
             for cmd in commands:
