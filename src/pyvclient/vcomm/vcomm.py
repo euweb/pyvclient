@@ -113,7 +113,8 @@ class VComm():
                 if attempt < 0:
                     self.__cleanup()
                     raise VCommError("No connection to vcontrold possible")
-        
+            finally:
+                self.__cleanup()
         return success
 
     def process_commands(self, commands):
