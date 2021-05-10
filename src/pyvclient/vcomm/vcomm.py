@@ -19,6 +19,7 @@ class VComm():
         self._connection_errorlog = 5
         self._connection_attempts = 0
         self._has_lock = False
+        self.connected = False
 
     def __connect(self):
         logger.info("connect to vcontrold")
@@ -29,8 +30,11 @@ class VComm():
                               self.host)
             self.tn = telnetlib.Telnet(self.host, self.port)
             self.tn.read_until(b"vctrld>")
+            self.connected = True
+            logger.debug("Connected successfully to %s", self.host)
         except Exception as e:
             logger.error(e)
+            self.connected = False
 
     
     def __connected(self):
@@ -48,12 +52,14 @@ class VComm():
         except Exception as e:
             logger.error(e)
         finally:
+            self.connected = False
             # TODO fix hack due to reconnection errors
             time.sleep(1)
     
     def __cleanup(self):
         if self._has_lock:
-            self.__close()
+            if self.connected:
+                self.__close()
             self._lock.release()
             self._has_lock = False
 
