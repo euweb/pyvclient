@@ -30,19 +30,24 @@ class VComm():
                               self.host)
             self.tn = telnetlib.Telnet(self.host, self.port)
             self.tn.read_until(b"vctrld>")
-            self.connected = True
             logger.debug("Connected successfully to %s", self.host)
         except Exception as e:
             logger.error(e)
             self.connected = False
+        else:
+            self.connected = True
 
     
     def __connected(self):
         # see: https://stackoverflow.com/questions/8480766/detect-a-closed-connection-in-pythons-telnetlib/42124099
-        if self.tn.get_socket().fileno() == -1:
+        try:
+            if self.tn.get_socket().fileno() == -1:
+                return False
+            else:
+                return True
+        except AttributeError:
+            logger.debug("tn object doesn't exist - not yet connected")
             return False
-        else:
-            return True
 
     def __close(self):
         logger.info("disconnect from vcontrold")
