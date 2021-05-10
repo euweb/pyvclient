@@ -50,7 +50,7 @@ class VComm():
             time.sleep(1)
     
     def __cleanup(self):
-        if self.__has_lock:
+        if self._has_lock:
             self.__close()
             self._lock.release()
             self._has_lock = False
