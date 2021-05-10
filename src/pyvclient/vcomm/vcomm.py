@@ -112,7 +112,7 @@ class VComm():
         if not self.__connected():
             self.__connect()
 
-        while not success & attempt > 0:
+        while ((not success) & (attempt > 0)):
             try:
                 logger.debug("set: [" + cmd + "]")
                 self.tn.write(cmd.encode('utf-8'))
@@ -127,8 +127,8 @@ class VComm():
                 if attempt < 0:
                     self.__cleanup()
                     raise VCommError("No connection to vcontrold possible")
-            finally:
-                self.__cleanup()
+                        
+        self.__cleanup()
         return success
 
     def process_commands(self, commands):
