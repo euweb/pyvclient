@@ -10,6 +10,7 @@ class VCommError(Exception):
 
 
 class VComm():
+    _has_lock = False
 
     def __init__(self, host='127.0.0.1', port=3002):
         self.host = host
