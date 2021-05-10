@@ -16,14 +16,13 @@ class VComm():
         self.host = host
         self.port = port
         self._lock = threading.Lock()
-        self.connected = False
         self._connection_errorlog = 5
         self._connection_attempts = 0
         self._has_lock = False
 
     def __connect(self):
         logger.info("connect to vcontrold")
-        if self.connected:
+        if not self.__connected():
             return
         try:
             logger.debug('create new connection to %s',
@@ -31,14 +30,17 @@ class VComm():
             self.tn = telnetlib.Telnet(self.host, self.port)
             self.tn.read_until(b"vctrld>")
         except Exception as e:
-            self.connected = False
             logger.error(e)
+
+    
+    def __connected(self):
+        if self.tn.get_socket().fileno() == -1:
+            return False
         else:
-            self.connected = True
+            return True
 
     def __close(self):
         logger.info("disconnect from vcontrold")
-        self.connected = False
         try:
             self.tn.write(b"quit\n")
             self.tn.close()
@@ -64,7 +66,7 @@ class VComm():
 
         while not value:
 
-            if not self.connected:
+            if not self.__connected():
                 self.__connect()
 
             try:
@@ -95,7 +97,7 @@ class VComm():
 
         cmd = 'set' + reg + " " + value + "\n"
 
-        if not self.connected:
+        if not self.__connected():
             self.__connect()
 
         while not success & attempt > 0:
