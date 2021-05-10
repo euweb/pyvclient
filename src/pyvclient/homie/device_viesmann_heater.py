@@ -7,6 +7,7 @@ from .property_integer import Property_Integer
 from .property_temperature import Property_Temperature
 from .property_string import Property_String
 from pyvclient.vcomm.vcomm import VComm
+from pyvclient.vcomm.vcomm import VCommError
 
 logger = logging.getLogger(__name__)
 
