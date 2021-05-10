@@ -22,7 +22,7 @@ class VComm():
 
     def __connect(self):
         logger.info("connect to vcontrold")
-        if not self.__connected():
+        if self.__connected():
             return
         try:
             logger.debug('create new connection to %s',
@@ -34,6 +34,7 @@ class VComm():
 
     
     def __connected(self):
+        # see: https://stackoverflow.com/questions/8480766/detect-a-closed-connection-in-pythons-telnetlib/42124099
         if self.tn.get_socket().fileno() == -1:
             return False
         else:
