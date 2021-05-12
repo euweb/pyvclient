@@ -2,10 +2,12 @@ import logging
 
 from homie.device_base import Device_Base
 from homie.node.node_base import Node_Base
-from homie.node.property.property_enum import Property_Enum
-from homie.node.property.property_integer import Property_Integer
-from homie.node.property.property_temperature import Property_Temperature
-from homie.node.property.property_string import Property_String
+from .property_enum import Property_Enum
+from .property_integer import Property_Integer
+from .property_temperature import Property_Temperature
+from .property_string import Property_String
+from pyvclient.vcomm.vcomm import VComm
+from pyvclient.vcomm.vcomm import VCommError
 
 logger = logging.getLogger(__name__)
 
@@ -16,15 +18,17 @@ MQTT_DEFAULT_SETTINGS = {
 
 
 class DeviceViessmannHeater(Device_Base):
+    vcomm = None
     def __init__(self,
                  item_config,
                  device_id="viessmann",
                  name="Viessmann Heizung",
                  homie_settings=None,
                  mqtt_settings=MQTT_DEFAULT_SETTINGS,
+                 vc=None
                  ):
         super().__init__(device_id, name, homie_settings, mqtt_settings)
-
+        self.vcomm=vc
         node = Node_Base(self, "generic", "Generic", "generic")
         self.add_node(node)
 
@@ -90,10 +94,12 @@ class DeviceViessmannHeater(Device_Base):
 
         self.start()
 
-    def set_value(self, value):
-        # TODO implement setvalue
-        print("Set value: {}".format(value))
-        logger.debug("Set value: {}".format(value))
+    def set_value(self, value, name):     
+        logger.debug("Set value: {} for {}".format(value, name))
+        try:
+            self.vcomm.set_command(name, value)
+        except VCommError:
+            logger.error("Failed to set " + name + " to " + value)
 
     def update_value(self, node_id, value):
         try:

@@ -10,41 +10,63 @@ class VCommError(Exception):
 
 
 class VComm():
+    _has_lock = False
 
     def __init__(self, host='127.0.0.1', port=3002):
         self.host = host
         self.port = port
         self._lock = threading.Lock()
-        self.connected = False
         self._connection_errorlog = 5
         self._connection_attempts = 0
+        self._has_lock = False
+        self.connected = False
 
     def __connect(self):
         logger.info("connect to vcontrold")
-        if self.connected:
+        if self.__connected():
             return
         try:
             logger.debug('create new connection to %s',
                               self.host)
             self.tn = telnetlib.Telnet(self.host, self.port)
             self.tn.read_until(b"vctrld>")
+            logger.debug("Connected successfully to %s", self.host)
         except Exception as e:
-            self.connected = False
             logger.error(e)
+            self.connected = False
         else:
             self.connected = True
 
+    
+    def __connected(self):
+        # see: https://stackoverflow.com/questions/8480766/detect-a-closed-connection-in-pythons-telnetlib/42124099
+        try:
+            if self.tn.get_socket().fileno() == -1:
+                return False
+            else:
+                return True
+        except AttributeError:
+            logger.debug("tn object doesn't exist - not yet connected")
+            return False
+
     def __close(self):
         logger.info("disconnect from vcontrold")
-        self.connected = False
         try:
             self.tn.write(b"quit\n")
             self.tn.close()
         except Exception as e:
             logger.error(e)
         finally:
+            self.connected = False
             # TODO fix hack due to reconnection errors
             time.sleep(1)
+    
+    def __cleanup(self):
+        if self._has_lock:
+            if self.connected:
+                self.__close()
+            self._lock.release()
+            self._has_lock = False
 
     def __request(self, cmd):
 
@@ -56,7 +78,7 @@ class VComm():
 
         while not value:
 
-            if not self.connected:
+            if not self.__connected():
                 self.__connect()
 
             try:
@@ -72,22 +94,54 @@ class VComm():
                 logger.error(e)
                 attempts -= 1
                 if attempts < 0:
-                    self._lock.release()
+                    self.__cleanup()
                     raise VCommError("No connection to vcontrold.")
 
         return value
+
+    def set_command(self, reg, value):
+        logger.debug("set  %s to %s", reg, value)
+        self._lock.acquire()
+        self._has_lock = True
+
+        attempt = 5
+        success = False
+
+        cmd = 'set' + reg + " " + value + "\n"
+
+        if not self.__connected():
+            self.__connect()
+
+        while ((not success) & (attempt > 0)):
+            try:
+                logger.debug("set: [" + cmd + "]")
+                self.tn.write(cmd.encode('utf-8'))
+                value = self.tn.read_until(b'vctrld>').decode('utf-8').splitlines()[:-1]
+                logger.debug("received feedback: " + str(value))
+                if str(value) == "['OK']":
+                    success = True
+                attempt -= 1
+            except Exception as e:
+                logger.error(e)
+                attempt -= 1
+                if attempt < 0:
+                    self.__cleanup()
+                    raise VCommError("No connection to vcontrold possible")
+                        
+        self.__cleanup()
+        return success
 
     def process_commands(self, commands):
         logger.info("process commands")
         logger.debug(commands)
         self._lock.acquire()
+        self._has_lock = True
         ret = {}
         try:
             for cmd in commands:
                 ret.update({cmd: self.__request(cmd)})
         finally:
-            self.__close()
-            self._lock.release()
+            self.__cleanup()
 
         return ret
 
