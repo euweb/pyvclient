@@ -1,7 +1,6 @@
 version: 1
 disable_existing_loggers: true
 
-
 formatters:
   standard:
     format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -53,15 +52,14 @@ handlers:
 
 root:
   level: DEBUG
-  handlers: [console]
-  propogate: no
-
+  handlers: [ console ]
+  propogate: yes
 loggers:
   pyvclient:
     level: DEBUG
-    handlers: [info_file_handler, error_file_handler, debug_file_handler, warn_file_handler]
+    handlers: [ console, info_file_handler, error_file_handler, debug_file_handler, warn_file_handler ]
     propogate: yes
 
-  homie:
-    level: ERROR
-    handlers: [info_file_handler, error_file_handler, debug_file_handler, warn_file_handler]
+  paho:
+    level: WARNING
+    handlers: [ info_file_handler, error_file_handler ]

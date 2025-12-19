@@ -1,9 +1,48 @@
 import logging
-import telnetlib
+import socket
 import threading
 import time
 
 logger = logging.getLogger(__name__)
+
+
+class SimpleTelnet:
+    """Simple telnet replacement for basic operations."""
+    
+    def __init__(self, host, port, timeout=10):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.settimeout(timeout)
+        self.sock.connect((host, port))
+        
+    def read_until(self, expected, timeout=10):
+        """Read until expected bytes are found."""
+        self.sock.settimeout(timeout)
+        buf = b''
+        while expected not in buf:
+            try:
+                data = self.sock.recv(1024)
+                if not data:
+                    break
+                buf += data
+            except socket.timeout:
+                break
+        return buf
+    
+    def write(self, data):
+        """Write data to socket."""
+        self.sock.sendall(data)
+    
+    def get_socket(self):
+        """Get underlying socket."""
+        return self.sock
+    
+    def close(self):
+        """Close connection."""
+        try:
+            self.sock.close()
+        except:
+            pass
+
 
 class VCommError(Exception):
     pass
@@ -20,6 +59,7 @@ class VComm():
         self._connection_attempts = 0
         self._has_lock = False
         self.connected = False
+        self.tn = None  # Initialize to None
 
     def __connect(self):
         logger.info("connect to vcontrold")
@@ -28,7 +68,7 @@ class VComm():
         try:
             logger.debug('create new connection to %s',
                               self.host)
-            self.tn = telnetlib.Telnet(self.host, self.port)
+            self.tn = SimpleTelnet(self.host, self.port)
             self.tn.read_until(b"vctrld>")
             logger.debug("Connected successfully to %s", self.host)
         except Exception as e:
@@ -41,6 +81,8 @@ class VComm():
     def __connected(self):
         # see: https://stackoverflow.com/questions/8480766/detect-a-closed-connection-in-pythons-telnetlib/42124099
         try:
+            if self.tn is None:
+                return False
             if self.tn.get_socket().fileno() == -1:
                 return False
             else:
@@ -72,7 +114,7 @@ class VComm():
 
         logger.debug("command: %s", cmd)
 
-        attempts = 5
+        attempts = 3  # Reduced from 5 to fail faster
 
         value = None
 
@@ -80,6 +122,14 @@ class VComm():
 
             if not self.__connected():
                 self.__connect()
+            
+            if not self.connected:
+                attempts -= 1
+                if attempts < 0:
+                    self.__cleanup()
+                    raise VCommError(f"No connection to vcontrold at {self.host}:{self.port}")
+                time.sleep(1)
+                continue
 
             try:
                 self.tn.write(cmd.encode('utf-8') + b"\n")
@@ -87,7 +137,7 @@ class VComm():
                     b'vctrld>'
                 ).decode('utf-8').splitlines()[:-1]
                 logger.debug("received value: " + str(value))
-                if (value[0] == 'ERR: <RECV: read error 11'):
+                if value and value[0] == 'ERR: <RECV: read error 11':
                     logger.error('viessmann: received error for %s', cmd)
                     value = None
             except Exception as e:
@@ -95,7 +145,8 @@ class VComm():
                 attempts -= 1
                 if attempts < 0:
                     self.__cleanup()
-                    raise VCommError("No connection to vcontrold.")
+                    raise VCommError(f"No connection to vcontrold at {self.host}:{self.port}")
+                time.sleep(1)
 
         return value
 
@@ -146,7 +197,7 @@ class VComm():
         return ret
 
     def process_command(self, cmd):
-        return process_command([cmd])
+        return self.process_commands([cmd])
 
     def get_commands(self):
         return self.process_command('commands')
