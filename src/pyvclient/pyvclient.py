@@ -1,8 +1,8 @@
 import logging
 import re
 
-from homie.support.repeating_timer import Repeating_Timer
-from pyvclient.homie.device_viesmann_heater import DeviceViessmannHeater
+from pyvclient.utils.repeating_timer import RepeatingTimer
+from pyvclient.ha.ha_viessmann_device import ViessmannDevice
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +20,15 @@ class ObjectView(object):
         self.__dict__ = d
 
 
-class CallBack:
+class UpdateCallback:
+    """Callback for periodic property updates."""
 
-    def __init__(self, heater):
+    def __init__(self, device):
         self.properties = []
-        self.heater = heater
-        pass
+        self.device = device
 
     def __call__(self):
-        self.heater.update_properties(self.properties)
+        self.device.update_properties(self.properties)
 
     def add_property(self, command):
         self.properties.append(command)
@@ -50,9 +50,37 @@ class PyVClient:
         self.config = ObjectView(config)
         self.properties = self.config.Properties
         self.precision = self.config.Precision
-        self.items = self._get_items()
-        self.heater = DeviceViessmannHeater(self.items.values(),
-                                            mqtt_settings=self.config.MQTT_SETTINGS, vc=vcomm)
+        
+        # Try to get items, but don't fail if vcontrold is not available
+        try:
+            self.items = self._get_items()
+        except Exception as e:
+            logger.error(f"Failed to initialize items from vcontrold: {e}")
+            logger.info("Creating stub items from config - will update when vcontrold is available")
+            self.items = self._create_stub_items()
+        
+        self.device = ViessmannDevice(
+            list(self.items.values()),
+            vcomm=vcomm,
+            mqtt_settings=self.config.MQTT_SETTINGS
+        )
+        self.device.start()
+
+    def _create_stub_items(self):
+        """Create stub items when vcontrold is not available."""
+        items = {}
+        for cmd in self.properties:
+            data = ObjectView({
+                'name': cmd,
+                'get_command': 'get' + cmd,
+                'settable': not self.properties[cmd]['readonly'],
+                'type': 'short',  # Default type
+                'unit': '',
+                'value': 0,
+                'raw_value': '0'
+            })
+            items[cmd] = data
+        return items
 
     def _get_items(self):
         items = []
@@ -81,24 +109,26 @@ class PyVClient:
                 self.parse_value(value_raw[0], self.items.get(prop)))
 
     def setup_timers(self):
-        logger.info("setting up cron")
+        """Setup periodic update timers for properties."""
+        logger.info("Setting up periodic update timers")
         callbacks = {}
         for prop in self.properties:
             interval = self.properties[prop]['interval']
             if interval not in callbacks:
-                callbacks[interval] = CallBack(self)
+                callbacks[interval] = UpdateCallback(self.device)
             callbacks[interval].add_property(prop)
 
-        for cb in callbacks:
-            repeating_timer = Repeating_Timer(
-                cb
-            )
-            repeating_timer.add_callback(callbacks[cb])
+        for interval, callback in callbacks.items():
+            repeating_timer = RepeatingTimer(interval)
+            repeating_timer.add_callback(callback)
+        
+        logger.info(f"Setup {len(callbacks)} timers")
 
     def parse_value(self, value, item):
         value = str(value).replace(item.unit, '').strip()
         if item.type == 'short':
             digits = self.precision.get(item.calc)
+            logger.debug("Precision: %s", digits)
             if digits:
                 value = round(float(value), digits)
             else:

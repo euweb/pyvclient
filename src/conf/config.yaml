@@ -11,6 +11,10 @@ VControld:
   host: localhost
   port: 3002
 
+# Property definitions for vcontrold
+# Each property maps to a vcontrold command
+# readonly: true = sensor only, false = controllable
+# interval: update interval in seconds
 Properties:
   TempA:
     readonly: true
@@ -36,7 +40,12 @@ Properties:
   BetriebArtM1:
     readonly: false
     interval: 3600
+  SystemTime:
+    readonly: true
+    interval: 300
 
+# Precision for value parsing
+# Maps vcontrold calculation format to decimal places
 Precision:
   "V": 0
   "V/2": 0

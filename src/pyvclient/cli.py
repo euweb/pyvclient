@@ -16,9 +16,9 @@ def get_config_form_file(filename='config.yaml'):
 
 
 @click.command()
-@click.option('--host', '-h', default='localhost',
+@click.option('--host', '-h', default=None,
               type=str, help=u'vcontrold host')
-@click.option('--port', '-p', default=3002, type=int, help=u'vcontrold port')
+@click.option('--port', '-p', default=None, type=int, help=u'vcontrold port')
 @click.option('--log', '-l', type=str, help=u'log config')
 @click.argument('config', type=click.Path(exists=True))
 def main(host, port, config, log):
@@ -26,8 +26,14 @@ def main(host, port, config, log):
 
     config = get_config_form_file(config)
 
-    vcomm = VComm(host=host or config['host'],
-                  port=port or config['port'])
+    vcomm_host = host or config['VControld']['host']
+    vcomm_port = port or config['VControld']['port']
+    
+    print(f"Starting pyvclient:")
+    print(f"  vcontrold: {vcomm_host}:{vcomm_port}")
+    print(f"  MQTT broker: {config['MQTT_SETTINGS']['MQTT_BROKER']}:{config['MQTT_SETTINGS']['MQTT_PORT']}")
+    
+    vcomm = VComm(host=vcomm_host, port=vcomm_port)
     pyvclient = PyVClient(vcomm, config)
     pyvclient.setup_timers()
 

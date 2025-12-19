@@ -15,9 +15,8 @@
 # numpy==1.13.3
 # scipy==1.0
 #
-click==7.0
-PyYAML~=5.3
-pyvclient~=0.0.post0.dev1+gf092c0a.dirty
-setuptools~=40.8.0
-homie~=0.4.1
-coloredlogs~=14.0
+click>=7.0
+PyYAML>=5.3
+setuptools>=40.8.0
+paho-mqtt>=1.6.1
+coloredlogs>=14.0
