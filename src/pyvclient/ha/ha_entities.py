@@ -254,8 +254,12 @@ class EntityFactory:
             # Integer values -> typically counters, hours, starts
             unit = getattr(item, 'unit', None)
             
-            # Check if it's a counter/accumulator
-            is_counter = any(x in name.lower() for x in ['stunden', 'hours', 'starts', 'count'])
+            # Check if it's a counter/accumulator (total values)
+            # SolarLeistung should be measurement (current power), not total_increasing
+            is_total_counter = any(x in name.lower() for x in ['stunden', 'hours', 'starts', 'count'])
+            
+            # SolarLeistung is instantaneous power, not cumulative
+            is_measurement = 'leistung' in name.lower() or 'power' in name.lower()
             
             if item.settable:
                 return HANumber(
@@ -272,6 +276,10 @@ class EntityFactory:
                     mode="box"
                 )
             else:
+                # Use measurement for instantaneous values (like power)
+                # Use total_increasing for cumulative counters (like hours, starts)
+                state_class = "measurement" if is_measurement else ("total_increasing" if is_total_counter else "measurement")
+                
                 return HASensor(
                     name=name,
                     object_id=object_id,
@@ -279,9 +287,9 @@ class EntityFactory:
                     state_topic=state_topic,
                     device_config=device_config,
                     unit_of_measurement=unit,
-                    state_class="total_increasing" if is_counter else "measurement",
+                    state_class=state_class,
                     entity_category="diagnostic",
-                    icon="mdi:counter" if is_counter else None
+                    icon="mdi:counter" if is_total_counter else ("mdi:solar-power" if is_measurement else None)
                 )
         
         elif item.type == 'systime':
