@@ -250,8 +250,9 @@ class EntityFactory:
                     icon="mdi:thermometer" if is_temp else None
                 )
         
-        elif item.type in ['int', 'uint']:
+        elif item.type in ['int', 'uint', 'char']:
             # Integer values -> typically counters, hours, starts
+            # char = 1-byte signed integer (e.g. heating curve slope/level)
             unit = getattr(item, 'unit', None)
             
             # Check if it's a counter/accumulator (total values)
