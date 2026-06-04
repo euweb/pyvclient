@@ -11,14 +11,17 @@ logger = logging.getLogger(__name__)
 class RepeatingTimer:
     """Timer that repeatedly executes callbacks at specified interval."""
     
-    def __init__(self, interval: int):
+    def __init__(self, interval: int, run_immediately: bool = True):
         """
         Initialize repeating timer.
         
         Args:
             interval: Interval in seconds between executions
+            run_immediately: If True, execute callbacks immediately on start
+                             before waiting for the first interval
         """
         self.interval = interval
+        self.run_immediately = run_immediately
         self.callbacks: List[Callable] = []
         self.timer: threading.Timer = None
         self.running = False
@@ -33,7 +36,10 @@ class RepeatingTimer:
         """Start the repeating timer."""
         if not self.running:
             self.running = True
-            self._schedule()
+            if self.run_immediately:
+                self._execute()
+            else:
+                self._schedule()
             logger.debug(f"Started repeating timer with interval {self.interval}s")
     
     def stop(self):
