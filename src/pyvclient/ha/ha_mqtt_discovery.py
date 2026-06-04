@@ -169,7 +169,7 @@ class HAMqttClient:
             self.client.subscribe(topic)
             logger.info(f"Subscribed to command topic: {topic}")
 
-    def publish_state(self, topic: str, state: Any, retain: bool = False):
+    def publish_state(self, topic: str, state: Any, retain: bool = True):
         """
         Publish state value to topic.
 
