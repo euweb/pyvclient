@@ -48,3 +48,6 @@ MANIFEST
 
 # Per-project virtualenvs
 .venv*/
+
+# Configuration files with secrets
+src/conf/config.yaml
