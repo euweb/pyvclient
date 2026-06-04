@@ -103,7 +103,7 @@ Properties:
 
   # --- Betriebsart & System ---
   BetriebArtM1:
-    readonly: true
+    readonly: false
     interval: 3600
   SystemTime:
     readonly: true
