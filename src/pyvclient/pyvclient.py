@@ -50,15 +50,39 @@ class PyVClient:
         self.config = ObjectView(config)
         self.properties = self.config.Properties
         self.precision = self.config.Precision
-        
-        # Try to get items, but don't fail if vcontrold is not available
-        try:
-            self.items = self._get_items()
-        except Exception as e:
-            logger.error(f"Failed to initialize items from vcontrold: {e}")
-            logger.info("Creating stub items from config - will update when vcontrold is available")
-            self.items = self._create_stub_items()
-        
+
+        # Retry connecting to vcontrold for up to 60 seconds at startup.
+        # This avoids publishing wrong MQTT discovery configs (type=short/unit=celsius)
+        # from stub items when vcontrold is not yet ready after a system reboot.
+        import time as _time
+        self.items = None
+        max_retries = 12
+        retry_delay = 5  # seconds
+        for attempt in range(1, max_retries + 1):
+            try:
+                self.items = self._get_items()
+                logger.info(f"vcontrold connection successful on attempt {attempt}")
+                break
+            except Exception as e:
+                if attempt < max_retries:
+                    logger.warning(
+                        f"vcontrold not ready (attempt {attempt}/{max_retries}): {e} "
+                        f"-- retrying in {retry_delay}s"
+                    )
+                    _time.sleep(retry_delay)
+                else:
+                    logger.error(
+                        f"vcontrold still not available after {max_retries} attempts: {e}. "
+                        "Starting without items -- discovery will be deferred until first poll."
+                    )
+
+        if self.items is None:
+            # Do NOT use _create_stub_items() here: stubs default to type=short which
+            # causes wrong MQTT discovery messages (unit=Celsius for counters/hours).
+            # Start with an empty set; vcontrold will be retried on the next poll cycle.
+            logger.warning("Starting with empty item set. MQTT discovery deferred.")
+            self.items = {}
+
         self.device = ViessmannDevice(
             list(self.items.values()),
             vcomm=vcomm,
